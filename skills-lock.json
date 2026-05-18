@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "skills": {
+    "okx-a2a-payment": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-a2a-payment/SKILL.md",
+      "computedHash": "8e6bdee628e72b2055079512069e2df9ced30c30812b7ecca49f5ded7daf9183"
+    },
+    "okx-agent-payments-protocol": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-agent-payments-protocol/SKILL.md",
+      "computedHash": "ae402351d5ab148eb655191a2d28aee229fd01aaefec22d9854331c46eeab60e"
+    },
+    "okx-agentic-wallet": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-agentic-wallet/SKILL.md",
+      "computedHash": "b1ef4d8ba424f89ee7207627477885104340b581ac63d6e62e61e2e0d9d103c4"
+    },
+    "okx-audit-log": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-audit-log/SKILL.md",
+      "computedHash": "031f878be21fae5a63d6bedb678b74d2dfae28f6917ae754a7e5710c21db8f73"
+    },
+    "okx-dapp-discovery": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dapp-discovery/SKILL.md",
+      "computedHash": "2d7f6bd0a1cd56904d8ebdcd78aaf1e5ca6cd51df9c3506a7f0c2e8e66299c06"
+    },
+    "okx-defi-invest": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-defi-invest/SKILL.md",
+      "computedHash": "29e34dceb9ffbc6d4ece71cb7f7ea821f5c965941732077229d35ba449537271"
+    },
+    "okx-defi-portfolio": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-defi-portfolio/SKILL.md",
+      "computedHash": "d88ac94470dd8e6a1bcd525404650ed17bfa6553111152a4715921cccf57b12c"
+    },
+    "okx-dex-bridge": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-bridge/SKILL.md",
+      "computedHash": "105ae183f6465c5abadd9b3dff88e17515be3acd28d3e4d2f999b5e6635614d9"
+    },
+    "okx-dex-market": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-market/SKILL.md",
+      "computedHash": "4dcceca21575ca2053c822ceeb4db10f0eb6bd6638663185049053a53b73d458"
+    },
+    "okx-dex-signal": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-signal/SKILL.md",
+      "computedHash": "3554138910966e594652dcde767ff1962912f675ea05714abe5e3cf8e01cf65a"
+    },
+    "okx-dex-social": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-social/SKILL.md",
+      "computedHash": "2078a1aa31d4a36cad7ff9a1d24cfa6f286d01346752ba1dacca8020b6bdf971"
+    },
+    "okx-dex-strategy": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-strategy/SKILL.md",
+      "computedHash": "970e60fcaf2ad5bbeb0dce94630fd8f7ddf513a982de77d64566e5c4ab015700"
+    },
+    "okx-dex-swap": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-swap/SKILL.md",
+      "computedHash": "54414faa48b2c65581b9d2e8c47103ce56904853f2c75c0b588b181dad916fc7"
+    },
+    "okx-dex-token": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-token/SKILL.md",
+      "computedHash": "bd6ebb7b5a08b4fd214b6e7217761f8903f031d49e98e489f22a690e4a1d4d51"
+    },
+    "okx-dex-trenches": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-trenches/SKILL.md",
+      "computedHash": "543c6fe8d5b04eb4de19907b1c80206e6dca79da1a22e83cae3d06fe6f105a1f"
+    },
+    "okx-dex-ws": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-dex-ws/SKILL.md",
+      "computedHash": "29c58fcc1a9df7a3b7e0b081f7e7584ca2adc1f8bfe15d07038da8d8ba11a388"
+    },
+    "okx-growth-competition": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-growth-competition/SKILL.md",
+      "computedHash": "7e72d48de3b7792f85d0b8dce858d1c34ccd4be2791917ae76d24b80763420aa"
+    },
+    "okx-how-to-play": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-how-to-play/SKILL.md",
+      "computedHash": "4e0e8dcd6fb9464a1aad59d6de5e5c216661ff8f1c90513da7506823f5eeaab1"
+    },
+    "okx-onchain-gateway": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-onchain-gateway/SKILL.md",
+      "computedHash": "451677c7b83ecbb11e85e3b293bae6731fa95fb0fac9c143df49024ae3fcb466"
+    },
+    "okx-security": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-security/SKILL.md",
+      "computedHash": "ead5feb01716b9726c65c500ed19be4645d77c0def023861a457aac26e602f99"
+    },
+    "okx-wallet-portfolio": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-wallet-portfolio/SKILL.md",
+      "computedHash": "9ee3a6d78e6e1c37c34c4eb7e7624e61cb07c6953a8b1c14672542316480ca16"
+    },
+    "okx-x402-payment": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "skillPath": "skills/okx-x402-payment/SKILL.md",
+      "computedHash": "ab7fadc1d60e5ef3d0c7f370daac8a7c6c8c07c6bc1cb9023e1927087a06a074"
+    }
+  }
+}
