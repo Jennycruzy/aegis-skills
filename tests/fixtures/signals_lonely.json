@@ -1,0 +1,13 @@
+{
+  "_note": "Synthetic signal feed with broad source diversity but low absolute count per token (lonely high-quality candidates).",
+  "chain": "solana",
+  "window_minutes": 60,
+  "now_ts_ms": 1750000000000,
+  "signals": [
+    {"ts_ms": 1749999000000, "token": "FAKE_CA_LONELY_aaaaa", "walletType": 1, "walletAddress": "WALLET_SM_1"},
+    {"ts_ms": 1749999100000, "token": "FAKE_CA_LONELY_aaaaa", "walletType": 2, "walletAddress": "WALLET_KOL_1"},
+    {"ts_ms": 1749999200000, "token": "FAKE_CA_LONELY_aaaaa", "walletType": 3, "walletAddress": "WALLET_WHALE_1"},
+    {"ts_ms": 1749999300000, "token": "FAKE_CA_OTHER_bbbbb", "walletType": 1, "walletAddress": "WALLET_SM_2"},
+    {"ts_ms": 1749999400000, "token": "FAKE_CA_OTHER_bbbbb", "walletType": 1, "walletAddress": "WALLET_SM_3"}
+  ]
+}

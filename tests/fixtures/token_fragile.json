@@ -1,0 +1,13 @@
+{
+  "_note": "Synthetic per-factor inputs for aegis-sentinel — a clearly fragile token. Values approximate normalised factors in [0,1].",
+  "chain": "solana",
+  "token": "FAKE_CA_FRAGILE_aaaaa",
+  "factors": {
+    "cluster_concentration": 0.85,
+    "bundle_sniper": 0.70,
+    "dev_rug_history": 0.60,
+    "holder_velocity": 0.55,
+    "lp_unlock_proximity": 0.40
+  },
+  "security_token_scan": {"riskLevel": "HIGH"}
+}

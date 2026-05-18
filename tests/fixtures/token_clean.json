@@ -1,0 +1,13 @@
+{
+  "_note": "Synthetic per-factor inputs for aegis-sentinel — a clean token.",
+  "chain": "solana",
+  "token": "FAKE_CA_CLEAN_aaaaa",
+  "factors": {
+    "cluster_concentration": 0.15,
+    "bundle_sniper": 0.05,
+    "dev_rug_history": 0.00,
+    "holder_velocity": 0.10,
+    "lp_unlock_proximity": 0.00
+  },
+  "security_token_scan": {"riskLevel": "LOW"}
+}

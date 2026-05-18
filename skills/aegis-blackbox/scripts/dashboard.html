@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AEGIS Blackbox Dashboard</title>
+  <style>
+    :root {
+      --bg: #0e0f12; --panel: #15171c; --panel-2: #1c1f26; --fg: #e6e7eb;
+      --muted: #8a8f99; --accent: #5ad17a; --warn: #e5a23b; --bad: #e34b5b;
+      --good: #5ad17a; --line: #2a2d34;
+    }
+    html, body { background: var(--bg); color: var(--fg);
+                 font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+                 margin: 0; padding: 0; }
+    header { padding: 16px 24px; border-bottom: 1px solid var(--line); display: flex;
+             gap: 20px; align-items: baseline; flex-wrap: wrap; }
+    header h1 { font-size: 16px; margin: 0; letter-spacing: 0.04em; }
+    header .kpis { display: flex; gap: 16px; flex-wrap: wrap; }
+    header .kpi { color: var(--muted); }
+    header .kpi b { color: var(--fg); margin-left: 6px; }
+    main { display: grid; grid-template-columns: 1fr 1fr;
+           gap: 16px; padding: 16px 24px; }
+    .panel { background: var(--panel); border: 1px solid var(--line);
+             border-radius: 8px; padding: 14px 16px; }
+    .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;
+                color: var(--muted); margin: 0 0 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--line);
+             font-size: 12px; }
+    th { color: var(--muted); font-weight: normal; }
+    tr:hover td { background: var(--panel-2); }
+    .pill { display: inline-block; padding: 1px 6px; border-radius: 4px;
+            font-size: 11px; }
+    .pill.RETIRE { background: rgba(227,75,91,0.18); color: var(--bad); }
+    .pill.MONITOR { background: rgba(229,162,59,0.18); color: var(--warn); }
+    .pill.ACTIVE  { background: rgba(90,209,122,0.18); color: var(--good); }
+    .pill.INSUFFICIENT_DATA { background: rgba(138,143,153,0.18); color: var(--muted); }
+    .banner { background: rgba(229,162,59,0.10); border: 1px solid var(--warn);
+              color: var(--warn); padding: 8px 12px; border-radius: 6px;
+              margin-bottom: 10px; font-size: 12px; }
+    canvas { width: 100% !important; max-height: 240px; }
+    footer { color: var(--muted); padding: 10px 24px 24px; font-size: 11px; }
+    code { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AEGIS · Blackbox</h1>
+    <div class="kpis">
+      <span class="kpi">decisions <b id="kpi-decisions">—</b></span>
+      <span class="kpi">trades <b id="kpi-trades">—</b></span>
+      <span class="kpi">win-rate <b id="kpi-winrate">—</b></span>
+      <span class="kpi">hibernation <b id="kpi-hib">—</b></span>
+      <span class="kpi">decay run <b id="kpi-decayts">—</b></span>
+      <span class="kpi">prompt-inject <b id="kpi-pi">0</b></span>
+    </div>
+  </header>
+  <main>
+    <section class="panel" style="grid-column: 1 / span 2;">
+      <h2>Recent trades</h2>
+      <div id="trades-banner"></div>
+      <table id="trades-table">
+        <thead><tr>
+          <th>ts</th><th>token</th><th>chain</th><th>side</th><th>size $</th>
+          <th>realized %</th><th>sim</th><th>tx</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section class="panel">
+      <h2>Cumulative realized PnL %</h2>
+      <canvas id="pnl-chart"></canvas>
+    </section>
+    <section class="panel">
+      <h2>Decision reasons</h2>
+      <canvas id="reasons-chart"></canvas>
+    </section>
+    <section class="panel" style="grid-column: 1 / span 2;">
+      <h2>Signal-source decay</h2>
+      <div id="decay-banner"></div>
+      <table id="decay-table">
+        <thead><tr>
+          <th>source</th><th>band</th><th>score</th><th>long n</th>
+          <th>recent n</th><th>long mean</th><th>recent mean</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+  <footer>
+    Data path: <code id="bb-path">~/.aegis/state/blackbox/</code>.
+    If panels show "fetch failed", run <code>python -m http.server 8000</code>
+    in the data directory and open <code>http://localhost:8000/dashboard.html</code>.
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+          integrity="sha384-Zd9wPjQRAi/RehbqaAj+I6gVO40MlMmtvqcyjT2bf5+tojvyAEOQYTrxctitqg5"
+          crossorigin="anonymous"></script>
+  <script>
+    "use strict";
+    const ROOT = (new URLSearchParams(location.search)).get("path")
+              || (location.protocol === "file:" ? "./" : "/state/blackbox/");
+    const el = (id) => document.getElementById(id);
+
+    async function loadJsonl(name) {
+      const url = ROOT + name;
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const text = await resp.text();
+        return text.split("\n").filter(Boolean).map((ln) => {
+          try { return JSON.parse(ln); } catch (_) { return null; }
+        }).filter(Boolean);
+      } catch (e) {
+        return { __error: String(e) };
+      }
+    }
+    async function loadJson(name) {
+      try {
+        const resp = await fetch(ROOT + name);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return await resp.json();
+      } catch (e) {
+        return { __error: String(e) };
+      }
+    }
+
+    function setText(node, text) { node.textContent = text; }
+    function cell(row, text, cls) {
+      const td = document.createElement("td");
+      td.textContent = text == null ? "" : String(text);
+      if (cls) td.className = cls;
+      row.appendChild(td);
+    }
+    function pill(text, cls) {
+      const span = document.createElement("span");
+      span.className = "pill " + cls;
+      span.textContent = text;
+      return span;
+    }
+
+    (async function main() {
+      const [decisions, trades, decay] = await Promise.all([
+        loadJsonl("decisions.jsonl"),
+        loadJsonl("trades.jsonl"),
+        loadJson("decay_report.json"),
+      ]);
+
+      const decCount = Array.isArray(decisions) ? decisions.length : 0;
+      const trCount  = Array.isArray(trades)    ? trades.length    : 0;
+      setText(el("kpi-decisions"), decCount);
+      setText(el("kpi-trades"),    trCount);
+
+      let wins = 0, settled = 0, piCount = 0, hibStatus = "—";
+      if (Array.isArray(decisions)) {
+        for (const r of decisions) {
+          if (r.event === "prompt_injection_suspect") piCount++;
+          if (r.event === "hibernation_engaged") hibStatus = "HIBERNATED";
+          if (r.event === "hibernation_cleared") hibStatus = "ACTIVE";
+        }
+      }
+      if (Array.isArray(trades)) {
+        for (const t of trades) {
+          const r = t.attribution && t.attribution.realized_pnl_pct;
+          if (r != null) {
+            settled++;
+            if (Number(r) > 0) wins++;
+          }
+        }
+      }
+      setText(el("kpi-winrate"), settled ? ((wins/settled)*100).toFixed(1) + "%" : "—");
+      setText(el("kpi-hib"), hibStatus);
+      setText(el("kpi-pi"),  piCount);
+
+      // trades table
+      const tBody = el("trades-table").querySelector("tbody");
+      const tBan  = el("trades-banner");
+      if (trades && trades.__error) {
+        const div = document.createElement("div");
+        div.className = "banner";
+        div.textContent = "trades.jsonl fetch failed — " + trades.__error;
+        tBan.appendChild(div);
+      } else if (Array.isArray(trades)) {
+        for (const t of trades.slice(-25).reverse()) {
+          const tr = document.createElement("tr");
+          cell(tr, t.ts_ms || "");
+          cell(tr, t.token || "");
+          cell(tr, t.chain || "");
+          cell(tr, t.side || "");
+          cell(tr, t.size_usd || "");
+          const r = t.attribution && t.attribution.realized_pnl_pct;
+          cell(tr, r == null ? "—" : (Number(r) * 100).toFixed(2) + "%");
+          cell(tr, t.sim_ok ? "✓" : "—");
+          cell(tr, t.tx_hash ? (t.tx_hash.slice(0, 8) + "…" + t.tx_hash.slice(-4)) : "");
+          tBody.appendChild(tr);
+        }
+      }
+
+      // PnL chart
+      if (typeof Chart !== "undefined" && Array.isArray(trades)) {
+        const labels = [], series = [];
+        let cum = 0;
+        for (const t of trades) {
+          const r = t.attribution && t.attribution.realized_pnl_pct;
+          if (r == null) continue;
+          cum += Number(r) * 100;
+          labels.push(t.ts_ms);
+          series.push(cum);
+        }
+        if (labels.length) {
+          new Chart(el("pnl-chart"), {
+            type: "line",
+            data: { labels, datasets: [
+              { data: series, borderColor: "#5ad17a", tension: 0.2,
+                pointRadius: 0, borderWidth: 2 }
+            ]},
+            options: { plugins: { legend: { display: false } },
+                       scales: { x: { ticks: { color: "#8a8f99" } },
+                                 y: { ticks: { color: "#8a8f99" } } } }
+          });
+        }
+      }
+
+      // reasons chart
+      if (typeof Chart !== "undefined" && Array.isArray(decisions)) {
+        const counts = {};
+        for (const r of decisions) {
+          let key = null;
+          if (r.event === "gate_failed") key = "fail:" + (r.gate || "?");
+          else if (r.decision) key = r.decision;
+          if (key) counts[key] = (counts[key] || 0) + 1;
+        }
+        const labels = Object.keys(counts);
+        const data = labels.map((k) => counts[k]);
+        if (labels.length) {
+          new Chart(el("reasons-chart"), {
+            type: "bar",
+            data: { labels, datasets: [
+              { data, backgroundColor: "#5ad17a", borderWidth: 0 }
+            ]},
+            options: { plugins: { legend: { display: false } },
+                       scales: { x: { ticks: { color: "#8a8f99" } },
+                                 y: { ticks: { color: "#8a8f99" } } } }
+          });
+        }
+      }
+
+      // decay table
+      const dBody = el("decay-table").querySelector("tbody");
+      const dBan  = el("decay-banner");
+      if (decay && decay.__error) {
+        const div = document.createElement("div");
+        div.className = "banner";
+        div.textContent = "decay_report.json fetch failed — " + decay.__error;
+        dBan.appendChild(div);
+      } else if (decay && decay.sources) {
+        setText(el("kpi-decayts"), decay.computed_ts_ms || "—");
+        const entries = Object.entries(decay.sources);
+        entries.sort((a, b) => {
+          const order = { RETIRE: 0, MONITOR: 1, ACTIVE: 2, INSUFFICIENT_DATA: 3 };
+          return (order[a[1].band] ?? 9) - (order[b[1].band] ?? 9);
+        });
+        for (const [name, info] of entries) {
+          const tr = document.createElement("tr");
+          cell(tr, name);
+          const td = document.createElement("td");
+          td.appendChild(pill(info.band, info.band));
+          tr.appendChild(td);
+          cell(tr, info.decay_score ?? "—");
+          cell(tr, info.long_term_n);
+          cell(tr, info.recent_n);
+          cell(tr, info.long_term_mean);
+          cell(tr, info.recent_mean ?? "—");
+          dBody.appendChild(tr);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

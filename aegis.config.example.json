@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "chains": ["solana", "xlayer"],
+  "fader": {
+    "lookback_minutes": 60,
+    "crowd_threshold": 0.70,
+    "min_source_diversity": 3,
+    "max_position_pct": 0.05,
+    "max_daily_entries": 20,
+    "attribution_delay_minutes": 60,
+    "swap": {
+      "max_price_impact_pct": 5.0,
+      "divergence_max_pct": 1.5,
+      "gas_level": "fast",
+      "mev_tips_sol": "0.0005"
+    }
+  },
+  "sentinel": {
+    "block_threshold": 0.50,
+    "size_down_threshold": 0.30,
+    "weights": {
+      "cluster_concentration": 0.30,
+      "bundle_sniper": 0.25,
+      "dev_rug_history": 0.20,
+      "holder_velocity": 0.15,
+      "lp_unlock_proximity": 0.10
+    },
+    "cache_ttl_seconds": 60
+  },
+  "hibernator": {
+    "rolling_window_trades": 10,
+    "rolling_window_hours": 24,
+    "max_rolling_drawdown_pct": 0.15,
+    "auto_close_on_hibernate": false,
+    "cool_off_minutes": 60,
+    "ws_lost_retries": 3,
+    "ws_poll_interval_seconds": 5
+  },
+  "quartermaster": {
+    "kelly_fraction": 0.25,
+    "shrinkage_alpha": 1,
+    "shrinkage_beta": 4,
+    "min_position_usd": "5.00",
+    "max_position_pct": 0.05,
+    "fragility_curve": [[0.0, 1.0], [0.5, 0.2], [0.500001, 0.0]]
+  },
+  "blackbox": {
+    "rotation_bytes": 104857600,
+    "decay_long_term_days": 30,
+    "decay_recent_days": 7,
+    "decay_recompute_hours": 1,
+    "retire_threshold": 1.0,
+    "monitor_threshold": 0.5
+  },
+  "cli": {
+    "binary": "onchainos",
+    "timeout_seconds": 30,
+    "max_retries_transport": 3
+  }
+}

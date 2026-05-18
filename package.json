@@ -1,0 +1,42 @@
+{
+  "name": "aegis-skills",
+  "version": "1.0.0",
+  "description": "AEGIS — Agentic Execution Guardrails & Intelligence Stack. Five composable OnchainOS skills (fader, sentinel, hibernator, quartermaster, blackbox) for the OKX Agentic Wallet Trading Competition.",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "okx",
+    "onchainos",
+    "dex",
+    "solana",
+    "xlayer",
+    "trading",
+    "risk-management",
+    "kelly",
+    "kill-switch",
+    "observability",
+    "agentic-wallet"
+  ],
+  "author": "aegis",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/aegis/aegis-skills",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aegis/aegis-skills.git"
+  },
+  "files": [
+    "skills/",
+    "workflows/",
+    "aegis.config.example.json",
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "NOTES_FROM_REPO.md",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "echo '\\n  AEGIS installed.\\n  Skills: aegis-fader, aegis-sentinel, aegis-hibernator, aegis-quartermaster, aegis-blackbox\\n  Built on OnchainOS. See README.md and workflows/INDEX.md.\\n'"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,28 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# aegis runtime state (per-user)
+.aegis/
+~/.aegis/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# logs
+*.log
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/

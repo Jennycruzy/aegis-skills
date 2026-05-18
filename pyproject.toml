@@ -1,0 +1,35 @@
+[project]
+name = "aegis-skills"
+version = "1.0.0"
+description = "AEGIS — composable OnchainOS skills for the OKX Agentic Wallet Trading Competition"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+readme = "README.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".aegis", "node_modules"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = [
+  "E501",   # line length handled by formatter
+  "B008",   # default arg fn calls (argparse)
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["skills"]
+exclude = ["tests/.*"]
+ignore_missing_imports = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "."
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["."]
