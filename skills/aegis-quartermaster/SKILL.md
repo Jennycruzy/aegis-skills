@@ -200,42 +200,7 @@ writes its `size_computed` event back. No `quartermaster.json` state file exists
 - **Negative `avg_loss`** signs are taken absolute in the formula.
 - **Schema mismatch** on `trades.jsonl` → refuse to read; surface error; do not size.
 
-## Observability Hooks
-
-Emits `size_computed` to `~/.aegis/state/blackbox/decisions.jsonl`:
-
-```json
-{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-quartermaster",
- "event": "size_computed", "strategy_id": "aegis-fader",
- "token": "<ca>", "chain": "solana", "wallet_balance_usd": "5000.00",
- "hit_rate_shrunk": "0.41", "payoff_ratio": "1.83", "kelly_full": "0.087",
- "size_usd": "39.13", "binding_constraint": "fragility_curve"}
-```
-
-## Safety Guarantees
-
-- Never returns a size larger than `max_position_pct × wallet_balance`.
-- Never sizes when `hit_rate_shrunk × payoff_ratio − (1 − hit_rate_shrunk) ≤ 0`.
-- Never trusts a CLI-supplied wallet balance: when in doubt, requires `--wallet-balance-usd`
-  explicitly.
-- Never uses floats for the final dollar size (Decimal throughout).
-
-## Composition Contract
-
-- **Calls**: optionally `onchainos portfolio total-value` (only `from-portfolio`).
-- **Called by**: `aegis-fader` per candidate.
-- **Independently usable?** Yes — emits the same JSON shape for any external strategy that
-  feeds wins/losses.
-
-## Testing
-
-Fixtures: none required (synthetic inputs in the test file).
-
-Unit tests:
-- `tests/unit/test_kelly.py` — zero history, all-loss, single-win, high-fragility,
-  low-balance, negative-edge, exact `binding_constraint` selection.
-
-## Worked Example — Failure Path (high fragility → size = 0)
+### Worked example — high fragility forces size = 0
 
 Quartermaster's most informative unhappy path: the fragility curve drives the multiplier to
 zero when `fragility ≥ 0.5`, forcing `size_usd = 0` even when the Kelly math itself was
@@ -291,6 +256,41 @@ multiplier.
 
 **Caller next step (Fader):** mark candidate as `SKIP` with `gate_failed: size_zero`. No
 quote, no simulate, no broadcast. The candidate is logged but no funds move.
+
+## Observability Hooks
+
+Emits `size_computed` to `~/.aegis/state/blackbox/decisions.jsonl`:
+
+```json
+{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-quartermaster",
+ "event": "size_computed", "strategy_id": "aegis-fader",
+ "token": "<ca>", "chain": "solana", "wallet_balance_usd": "5000.00",
+ "hit_rate_shrunk": "0.41", "payoff_ratio": "1.83", "kelly_full": "0.087",
+ "size_usd": "39.13", "binding_constraint": "fragility_curve"}
+```
+
+## Safety Guarantees
+
+- Never returns a size larger than `max_position_pct × wallet_balance`.
+- Never sizes when `hit_rate_shrunk × payoff_ratio − (1 − hit_rate_shrunk) ≤ 0`.
+- Never trusts a CLI-supplied wallet balance: when in doubt, requires `--wallet-balance-usd`
+  explicitly.
+- Never uses floats for the final dollar size (Decimal throughout).
+
+## Composition Contract
+
+- **Calls**: optionally `onchainos portfolio total-value` (only `from-portfolio`).
+- **Called by**: `aegis-fader` per candidate.
+- **Independently usable?** Yes — emits the same JSON shape for any external strategy that
+  feeds wins/losses.
+
+## Testing
+
+Fixtures: none required (synthetic inputs in the test file).
+
+Unit tests:
+- `tests/unit/test_kelly.py` — zero history, all-loss, single-win, high-fragility,
+  low-balance, negative-edge, exact `binding_constraint` selection.
 
 ## Global Notes
 

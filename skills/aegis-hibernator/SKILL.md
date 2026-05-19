@@ -212,47 +212,7 @@ Path: `~/.aegis/state/hibernator.json` (atomic).
 - **Schema mismatch** on `hibernator.json` → refuse to load; treat as ACTIVE-with-no-history
   for safety; emit `schema_mismatch`.
 
-## Observability Hooks
-
-```json
-{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-hibernator",
- "event": "hibernation_engaged", "reason": "drawdown",
- "last_realized_pnl_pct": "-0.18"}
-
-{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-hibernator",
- "event": "hibernation_cleared", "after_cool_off_minutes": 60}
-
-{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-hibernator",
- "event": "ws_trigger", "channel": "address-tracker-activity",
- "trigger": "dev_sell", "payload_digest": "sha256:…"}
-```
-
-## Safety Guarantees
-
-- Sticky — never auto-clears.
-- Single writer of `hibernator.json`; concurrent processes will see one update at a time
-  via atomic replace.
-- No private key, no signed payload, no session token ever written to disk.
-- Geo-blocked PnL reads default to `indeterminate`, not "ACTIVE good to go".
-- Auto-close honours every gate (`isHoneyPot`, simulation, geo-block) per the swap rules.
-
-## Composition Contract
-
-- **Calls**: `onchainos market portfolio-overview`, `portfolio-recent-pnl`,
-  `onchainos ws start|poll|stop|list`, optionally `onchainos swap execute` for close-all.
-- **Called by**: `aegis-fader` (before every entry and after every exit), manually by the
-  operator.
-- **Independently usable?** Yes — operators can use Hibernator as a stand-alone kill switch.
-
-## Testing
-
-Unit tests: `tests/unit/test_drawdown.py` — insufficient history, exactly-at-threshold, deep
-drawdown, cool-off enforcement, atomic state writes.
-
-Integration tests: `tests/integration/test_hibernation_trigger.py` — synthesises a WS payload
-fixture and verifies engagement.
-
-## Worked Example — Failure Path (engagement + cool-off-blocked wake)
+### Worked example — engagement + cool-off-blocked wake
 
 Hibernator is sticky by design: once engaged, `wake` only succeeds after the cool-off
 window has elapsed AND the operator runs `wake` explicitly. Demonstrates the safety
@@ -307,6 +267,46 @@ succeeds when `now ≥ cool_off_until_ts_ms` AND the operator explicitly invokes
 **Caller next step (Fader during this window):** every `aegis-fader scan` call returns
 `scan_completed` with `status: "skipped", skip_reason: "hibernated"`. No signals are
 pulled, no quotes are issued. Entries resume only after a successful `wake`.
+
+## Observability Hooks
+
+```json
+{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-hibernator",
+ "event": "hibernation_engaged", "reason": "drawdown",
+ "last_realized_pnl_pct": "-0.18"}
+
+{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-hibernator",
+ "event": "hibernation_cleared", "after_cool_off_minutes": 60}
+
+{"schema_version": 1, "ts_ms": 1747545600000, "skill": "aegis-hibernator",
+ "event": "ws_trigger", "channel": "address-tracker-activity",
+ "trigger": "dev_sell", "payload_digest": "sha256:…"}
+```
+
+## Safety Guarantees
+
+- Sticky — never auto-clears.
+- Single writer of `hibernator.json`; concurrent processes will see one update at a time
+  via atomic replace.
+- No private key, no signed payload, no session token ever written to disk.
+- Geo-blocked PnL reads default to `indeterminate`, not "ACTIVE good to go".
+- Auto-close honours every gate (`isHoneyPot`, simulation, geo-block) per the swap rules.
+
+## Composition Contract
+
+- **Calls**: `onchainos market portfolio-overview`, `portfolio-recent-pnl`,
+  `onchainos ws start|poll|stop|list`, optionally `onchainos swap execute` for close-all.
+- **Called by**: `aegis-fader` (before every entry and after every exit), manually by the
+  operator.
+- **Independently usable?** Yes — operators can use Hibernator as a stand-alone kill switch.
+
+## Testing
+
+Unit tests: `tests/unit/test_drawdown.py` — insufficient history, exactly-at-threshold, deep
+drawdown, cool-off enforcement, atomic state writes.
+
+Integration tests: `tests/integration/test_hibernation_trigger.py` — synthesises a WS payload
+fixture and verifies engagement.
 
 ## Global Notes
 

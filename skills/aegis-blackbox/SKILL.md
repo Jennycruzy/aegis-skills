@@ -183,6 +183,40 @@ Blackbox is observability — it does not gate trades. It does enforce:
 - **Schema mismatch** on a state file → refuse to load; log `schema_mismatch` to `meta.jsonl`;
   user must migrate or delete the file.
 
+### Worked example — corrupt JSONL line
+
+Blackbox's unhappy path is data corruption, not trade rejection.
+
+**Pre-condition:** a non-JSON line `this is not valid json {` was appended to
+`~/.aegis/state/blackbox/decisions.jsonl` (e.g. by a misbehaving sibling process).
+
+**Command:**
+
+```bash
+python skills/aegis-blackbox/scripts/logger.py tail --limit 3
+```
+
+**Output (tail skips the corrupt line, does not raise):**
+
+```
+1779213224100  aegis-quartermaster   size_computed         token=EPj…1v reason=below_minimum size_usd=0 fragility=0.550000
+1779213224172  aegis-fader           candidate_evaluated   token=EPj…1v decision=SKIP fragility=0.6800
+1779213240303  aegis-hibernator      hibernation_engaged   reason=manual
+```
+
+**Side effect — `meta.jsonl` records the incident:**
+
+```json
+{"schema_version":1,"ts_ms":1779213240475,"skill":"aegis-blackbox","event":"corrupt_line","file":"decisions.jsonl","line_no":19}
+```
+
+**Interpretation:** Blackbox is total — readers never raise on a corrupt row. The audit
+trail moves to `meta.jsonl` so the operator can investigate later. AEGIS callers
+proceeding through the loop are unaffected.
+
+**Caller next step:** none — the corrupt line is isolated. Operator should inspect
+`meta.jsonl` and decide whether to keep or archive `decisions.jsonl`.
+
 ## Observability Hooks
 
 Blackbox is itself observable. It emits the following self-instrumentation events to
@@ -230,42 +264,6 @@ Unit tests:
 Expected outcomes:
 - `decay.py recompute` produces deterministic classification on the fixtures.
 - `logger.py tail/grep/stats` survives a deliberately corrupt JSONL line by skipping it.
-
-## Worked Example — Failure Path (corrupt JSONL line)
-
-Blackbox is observability — its unhappy path is data corruption, not trade rejection. This
-example shows what happens when a process external to AEGIS appends a malformed line to
-`decisions.jsonl`.
-
-**Pre-condition:** a non-JSON line `this is not valid json {` was appended to
-`~/.aegis/state/blackbox/decisions.jsonl` (e.g. by a misbehaving sibling process).
-
-**Command:**
-
-```bash
-python skills/aegis-blackbox/scripts/logger.py tail --limit 3
-```
-
-**Output (tail skips the corrupt line, does not raise):**
-
-```
-1779213224100  aegis-quartermaster   size_computed         token=EPj…1v reason=below_minimum size_usd=0 fragility=0.550000
-1779213224172  aegis-fader           candidate_evaluated   token=EPj…1v decision=SKIP fragility=0.6800
-1779213240303  aegis-hibernator      hibernation_engaged   reason=manual
-```
-
-**Side effect — `meta.jsonl` records the incident:**
-
-```json
-{"schema_version":1,"ts_ms":1779213240475,"skill":"aegis-blackbox","event":"corrupt_line","file":"decisions.jsonl","line_no":19}
-```
-
-**Interpretation:** Blackbox is total — readers never raise on a corrupt row. The audit
-trail moves to `meta.jsonl` so the operator can investigate the byte offset / line number
-later. AEGIS callers proceeding through the loop are unaffected.
-
-**Caller next step:** none — the corrupt line is isolated. Operator should inspect
-`meta.jsonl` and decide whether to keep or archive `decisions.jsonl`.
 
 ## Global Notes
 

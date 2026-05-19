@@ -193,6 +193,42 @@ read and recomputed.
 - **Rate limit on any CLI call** → transport retry; if all retries fail, factor defaults to 0.5.
 - **Schema mismatch** on sentinel_cache.json → refuse to load; emit `schema_mismatch`; recompute.
 
+### Worked example — CRITICAL security scan forces BLOCK
+
+Sentinel's strictest gate: a `riskLevel: CRITICAL` from `okx-security token-scan` forces
+`fragility = 1.0` and `decision = BLOCK` regardless of the five composed factors. The
+composed score might say "fine" — the hard signal overrides.
+
+**Pre-condition:** A Solana token where the five composed factors total ~0.0575 (well
+inside the ALLOW band) BUT `okx-security token-scan` returns `riskLevel: "CRITICAL"`.
+
+**Composed via `compose_score` (factor values shown so the override is visible):**
+
+```json
+{
+  "fragility": "1.0000",
+  "decision": "BLOCK",
+  "factors": {
+    "cluster_concentration": {"value": "0.1000", "weight": "0.3000", "contribution": "0.0300"},
+    "bundle_sniper":         {"value": "0.0500", "weight": "0.2500", "contribution": "0.0125"},
+    "dev_rug_history":       {"value": "0.0000", "weight": "0.2000", "contribution": "0.0000"},
+    "holder_velocity":       {"value": "0.1000", "weight": "0.1500", "contribution": "0.0150"},
+    "lp_unlock_proximity":   {"value": "0.0000", "weight": "0.1000", "contribution": "0.0000"}
+  },
+  "reasons": ["security_critical"],
+  "security_token_scan": {"riskLevel": "CRITICAL"}
+}
+```
+
+**Interpretation:** the factor contributions sum to 0.0575 — an ALLOW score on the
+composed metric. The `security_token_scan: "CRITICAL"` flag bypasses the threshold ladder
+entirely. Sentinel does **not** reimplement honeypot / tax / phishing detection — it
+delegates to `okx-security` and treats CRITICAL as an absolute veto.
+
+**Caller next step (Fader):** `fader_decision = SKIP, skip_reason = "block"`, logged via
+the failure-path example in `aegis-fader`. Quartermaster is never invoked. No quote, no
+broadcast.
+
 ## Observability Hooks
 
 Emits `fragility_computed` to `~/.aegis/state/blackbox/decisions.jsonl`:
@@ -228,42 +264,6 @@ Fixtures: `tests/fixtures/token_fragile.json`, `token_clean.json`.
 Unit tests: `tests/unit/test_fragility.py` — clean token, fragile token, missing-factor
 defaults, non-Solana chain (factor defaults to 0.5), CRITICAL forces BLOCK, threshold
 boundaries.
-
-## Worked Example — Failure Path (CRITICAL security scan forces BLOCK)
-
-Sentinel's strictest gate: a `riskLevel: CRITICAL` from `okx-security token-scan` forces
-`fragility = 1.0` and `decision = BLOCK` regardless of the five composed factors. The
-composed score might say "fine" — the hard signal overrides.
-
-**Pre-condition:** A Solana token where the five composed factors total ~0.0575 (well
-inside the ALLOW band) BUT `okx-security token-scan` returns `riskLevel: "CRITICAL"`.
-
-**Composed via `compose_score` (factor values shown so the override is visible):**
-
-```json
-{
-  "fragility": "1.0000",
-  "decision": "BLOCK",
-  "factors": {
-    "cluster_concentration": {"value": "0.1000", "weight": "0.3000", "contribution": "0.0300"},
-    "bundle_sniper":         {"value": "0.0500", "weight": "0.2500", "contribution": "0.0125"},
-    "dev_rug_history":       {"value": "0.0000", "weight": "0.2000", "contribution": "0.0000"},
-    "holder_velocity":       {"value": "0.1000", "weight": "0.1500", "contribution": "0.0150"},
-    "lp_unlock_proximity":   {"value": "0.0000", "weight": "0.1000", "contribution": "0.0000"}
-  },
-  "reasons": ["security_critical"],
-  "security_token_scan": {"riskLevel": "CRITICAL"}
-}
-```
-
-**Interpretation:** the factor contributions sum to 0.0575 — an ALLOW score on the
-composed metric. The `security_token_scan: "CRITICAL"` flag bypasses the threshold ladder
-entirely. Sentinel does **not** reimplement honeypot / tax / phishing detection — it
-delegates to `okx-security` and treats CRITICAL as an absolute veto.
-
-**Caller next step (Fader):** `fader_decision = SKIP, skip_reason = "block"`, logged via
-the failure-path example in `aegis-fader`. Quartermaster is never invoked. No quote, no
-broadcast.
 
 ## Global Notes
 

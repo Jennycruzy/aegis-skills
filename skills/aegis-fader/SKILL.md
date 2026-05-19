@@ -188,6 +188,51 @@ Path: `~/.aegis/state/fader_session.json` (atomic). Schema:
 - **Schema mismatch** on `fader_session.json` → reset to today with `entries_today=0`; log
   `schema_mismatch`.
 
+### Worked example — Sentinel BLOCK → Fader SKIP
+
+The most common Fader unhappy path: Sentinel returns `BLOCK` on a candidate token (e.g.
+because `okx-security token-scan` flagged `riskLevel: CRITICAL`, or fragility ≥ 0.50).
+Fader must SKIP without sizing or quoting.
+
+**Pre-condition:** a candidate token with `fragility = 0.68` and Sentinel decision
+`BLOCK`. Hibernator is `ACTIVE`.
+
+**Command:**
+
+```bash
+python skills/aegis-fader/scripts/fade_score.py score \
+    --chain solana --token <ca> \
+    --signal-count 5 --source-diversity 3 --crowdedness 0.4 \
+    --fragility 0.68 --fragility-decision BLOCK --hibernator-status ACTIVE
+```
+
+**Output:**
+
+```json
+{
+  "schema_version": 1,
+  "ts_ms": 1779213224172,
+  "skill": "aegis-fader",
+  "event": "candidate_evaluated",
+  "chain": "solana",
+  "token": "<ca>",
+  "signal_count": 5,
+  "source_diversity": 3,
+  "crowdedness": "0.4",
+  "fragility": "0.6800",
+  "fragility_decision": "BLOCK",
+  "decision": "SKIP",
+  "skip_reason": "block"
+}
+```
+
+**Interpretation:** Fader **never** advances to Quartermaster sizing or quote/simulate when
+Sentinel says BLOCK. `skip_reason: "block"` is logged to Blackbox so the operator can later
+correlate skipped candidates with `riskLevel: CRITICAL` flags.
+
+**Caller next step:** the scan loop logs `gate_failed:block` and continues to the next
+candidate. No swap quote is issued; no funds move.
+
 ## Observability Hooks
 
 ```json
@@ -236,51 +281,6 @@ decay-filter exclusion.
 
 Integration tests: `tests/integration/test_full_loop_dry_run.py` — end-to-end with a stubbed
 CLI; verifies the dashboard renders.
-
-## Worked Example — Failure Path (Sentinel BLOCK → Fader SKIP)
-
-The most common Fader unhappy path: Sentinel returns `BLOCK` on a candidate token (e.g.
-because `okx-security token-scan` flagged `riskLevel: CRITICAL`, or fragility ≥ 0.50).
-Fader must SKIP without sizing or quoting.
-
-**Pre-condition:** a candidate token with `fragility = 0.68` and Sentinel decision
-`BLOCK`. Hibernator is `ACTIVE`.
-
-**Command:**
-
-```bash
-python skills/aegis-fader/scripts/fade_score.py score \
-    --chain solana --token <ca> \
-    --signal-count 5 --source-diversity 3 --crowdedness 0.4 \
-    --fragility 0.68 --fragility-decision BLOCK --hibernator-status ACTIVE
-```
-
-**Output:**
-
-```json
-{
-  "schema_version": 1,
-  "ts_ms": 1779213224172,
-  "skill": "aegis-fader",
-  "event": "candidate_evaluated",
-  "chain": "solana",
-  "token": "<ca>",
-  "signal_count": 5,
-  "source_diversity": 3,
-  "crowdedness": "0.4",
-  "fragility": "0.6800",
-  "fragility_decision": "BLOCK",
-  "decision": "SKIP",
-  "skip_reason": "block"
-}
-```
-
-**Interpretation:** Fader **never** advances to Quartermaster sizing or quote/simulate when
-Sentinel says BLOCK. `skip_reason: "block"` is logged to Blackbox so the operator can later
-correlate skipped candidates with `riskLevel: CRITICAL` flags.
-
-**Caller next step:** the scan loop logs `gate_failed:block` and continues to the next
-candidate. No swap quote is issued; no funds move.
 
 ## Global Notes
 
