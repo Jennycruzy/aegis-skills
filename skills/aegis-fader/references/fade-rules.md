@@ -1,5 +1,42 @@
 # fade-rules.md
 
+## Decision pseudocode
+
+```
+candidates = aggregate(onchainos signal list, walletType=1,2,3, window=lookback_minutes)
+filter out: source in decay_report.json.RETIRE
+for each token in candidates:
+    crowdedness     = signal_count / max_signal_count_in_window
+    source_diversity = |distinct walletType in this token's signals|
+    fragility       = aegis-sentinel score
+    if fragility.decision == BLOCK:                                SKIP
+    if hibernator.status == HIBERNATED:                            SKIP
+    if crowdedness ≥ crowd_threshold (default 0.70):
+        if fragility < block_threshold:
+            decision = FADE_OPPORTUNITY  # log-only, spot-only
+            continue
+    if crowdedness < crowd_threshold AND
+       source_diversity ≥ min_source_diversity (default 3) AND
+       fragility < 0.30:
+        size = aegis-quartermaster size(strategy_id=aegis-fader, fragility=…, wallet=…)
+        if size == 0:                                              SKIP
+        quote = onchainos swap quote …
+        if quote.isHoneyPot or quote.priceImpactPercent > max:     SKIP
+        sim = onchainos gateway simulate …
+        if sim.divergence > divergence_max_pct:                    SKIP
+        if dry_run:                                                STOP, log
+        tx = onchainos gateway broadcast …
+        track = onchainos gateway orders --address …
+        log trade; schedule attribution
+    else:
+        SKIP
+```
+
+## Hard caps
+
+- `position_size_usd ≤ wallet_balance × max_position_pct` (5 % default).
+- Daily entries ≤ `max_daily_entries` (20 default) tracked in `fader_session.json`.
+
 ## Gate order
 
 Fader runs the gates below in **strict order**. Any failure short-circuits with a

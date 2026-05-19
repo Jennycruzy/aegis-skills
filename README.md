@@ -89,7 +89,11 @@ python skills/aegis-fader/scripts/fade_score.py scan \
     --chain solana --window-minutes 60 --dry-run
 
 # 5. Open the dashboard
-xdg-open skills/aegis-blackbox/scripts/dashboard.html
+#    Modern browsers block file:// fetch — serve the JSONL dir over HTTP.
+mkdir -p ~/.aegis/state/blackbox
+cp skills/aegis-blackbox/scripts/dashboard.html ~/.aegis/state/blackbox/
+( cd ~/.aegis/state/blackbox && python -m http.server 8000 ) &
+xdg-open http://localhost:8000/dashboard.html
 ```
 
 For a 60-second judge-friendly walkthrough, see [docs/DEMO.md](docs/DEMO.md).
@@ -182,7 +186,10 @@ Three append-only JSONL ledgers in `~/.aegis/state/blackbox/`:
 - `trades.jsonl` — every executed trade with full attribution.
 - `signal_performance.jsonl` — per-source forward-return rows feeding the decay metric.
 
-A static HTML dashboard reads them via `fetch('file://…')` — no server, no build step.
+A static HTML dashboard reads them via `fetch()` over a one-line `python -m http.server` —
+no build step, no framework, single file. Modern browsers block `file://` fetch, so the
+Quickstart copies `dashboard.html` next to the JSONL files and serves on
+`http://localhost:8000`.
 
 Decay metric formula (`skills/aegis-blackbox/references/decay-metric.md`):
 

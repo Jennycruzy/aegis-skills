@@ -12,8 +12,8 @@ For each row in `signal_performance.jsonl`:
 
 - `source_id`: stable identifier (`<wallet_type>:<wallet_address>`).
 - `forward_return_1h`: realized 1-hour log-return after the signal fired, computed against
-  `onchainos market kline --bar 1h --limit 2` for the token; first close is t0, second close is
-  t1.
+  `onchainos market kline --chain <chain> --address <token-ca> --bar 1H --limit 2`; first
+  close is t0, second close is t1.
 
 ## Formula
 

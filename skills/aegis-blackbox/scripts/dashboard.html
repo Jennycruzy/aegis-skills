@@ -90,8 +90,10 @@
   </main>
   <footer>
     Data path: <code id="bb-path">~/.aegis/state/blackbox/</code>.
-    If panels show "fetch failed", run <code>python -m http.server 8000</code>
-    in the data directory and open <code>http://localhost:8000/dashboard.html</code>.
+    Modern browsers block <code>file://</code> fetch. If panels show "fetch failed",
+    copy this file into the data directory, then
+    <code>cd ~/.aegis/state/blackbox &amp;&amp; python -m http.server 8000</code>
+    and open <code>http://localhost:8000/dashboard.html</code>.
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"

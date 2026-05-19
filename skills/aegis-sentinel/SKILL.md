@@ -16,6 +16,26 @@ agent:
 Continuous Fragility Score per token, in [0, 1], composed from five weighted factors and a hard
 `okx-security` BLOCK signal.
 
+## Triggers
+
+**Use this skill when the user says (EN / 中文):**
+
+- "is this token safe to enter" / "这个币能买吗"
+- "show fragility score" / "脆弱度多少"
+- "audit holders / dev / bundlers" / "查持仓 / 查dev / 查捆绑狙击"
+- "check rug risk" / "查跑路风险"
+- "should I size down" / "需要缩仓吗"
+- "top-10 holder concentration" / "前10持仓集中度"
+- "LP unlock timeline" / "LP解锁时间"
+
+**Do NOT use this skill for (route to ↓):**
+
+- Honeypot / tax / phishing check (Sentinel **calls** this, never reimplements) → `okx-security`
+- Swap quote / execution → `okx-dex-swap`
+- Deep token info / charts → `okx-dex-token`, `okx-dex-trenches`
+- Position sizing math → `aegis-quartermaster`
+- Strategy decision verb → `aegis-fader`
+
 ## Prerequisites
 
 Read `../_shared/preflight.md`. Sentinel calls into `onchainos token`, `onchainos memepump`, and
@@ -208,6 +228,42 @@ Fixtures: `tests/fixtures/token_fragile.json`, `token_clean.json`.
 Unit tests: `tests/unit/test_fragility.py` — clean token, fragile token, missing-factor
 defaults, non-Solana chain (factor defaults to 0.5), CRITICAL forces BLOCK, threshold
 boundaries.
+
+## Worked Example — Failure Path (CRITICAL security scan forces BLOCK)
+
+Sentinel's strictest gate: a `riskLevel: CRITICAL` from `okx-security token-scan` forces
+`fragility = 1.0` and `decision = BLOCK` regardless of the five composed factors. The
+composed score might say "fine" — the hard signal overrides.
+
+**Pre-condition:** A Solana token where the five composed factors total ~0.0575 (well
+inside the ALLOW band) BUT `okx-security token-scan` returns `riskLevel: "CRITICAL"`.
+
+**Composed via `compose_score` (factor values shown so the override is visible):**
+
+```json
+{
+  "fragility": "1.0000",
+  "decision": "BLOCK",
+  "factors": {
+    "cluster_concentration": {"value": "0.1000", "weight": "0.3000", "contribution": "0.0300"},
+    "bundle_sniper":         {"value": "0.0500", "weight": "0.2500", "contribution": "0.0125"},
+    "dev_rug_history":       {"value": "0.0000", "weight": "0.2000", "contribution": "0.0000"},
+    "holder_velocity":       {"value": "0.1000", "weight": "0.1500", "contribution": "0.0150"},
+    "lp_unlock_proximity":   {"value": "0.0000", "weight": "0.1000", "contribution": "0.0000"}
+  },
+  "reasons": ["security_critical"],
+  "security_token_scan": {"riskLevel": "CRITICAL"}
+}
+```
+
+**Interpretation:** the factor contributions sum to 0.0575 — an ALLOW score on the
+composed metric. The `security_token_scan: "CRITICAL"` flag bypasses the threshold ladder
+entirely. Sentinel does **not** reimplement honeypot / tax / phishing detection — it
+delegates to `okx-security` and treats CRITICAL as an absolute veto.
+
+**Caller next step (Fader):** `fader_decision = SKIP, skip_reason = "block"`, logged via
+the failure-path example in `aegis-fader`. Quartermaster is never invoked. No quote, no
+broadcast.
 
 ## Global Notes
 

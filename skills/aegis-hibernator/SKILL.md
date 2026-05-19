@@ -15,6 +15,25 @@ agent:
 
 Drawdown threshold + WebSocket reactive kill switch. Sticky. Requires explicit re-enable.
 
+## Triggers
+
+**Use this skill when the user says (EN / 中文):**
+
+- "enable circuit breaker" / "打开熔断"
+- "check hibernation status" / "查熔断状态"
+- "am I hibernating" / "我现在是不是停了"
+- "wake the agent" / "解除熔断"
+- "pause trading on drawdown" / "回撤暂停交易"
+- "watch dev wallets" / "监控开发者钱包"
+- "react to migrating tokens" / "迁移即停"
+- "emergency stop" / "紧急停止"
+
+**Do NOT use this skill for (route to ↓):**
+
+- Wallet balance checks → `okx-wallet-portfolio`
+- The swap close itself (Hibernator orchestrates close-all but defers execution) → `okx-dex-swap`
+- Raw WebSocket protocol details / channel docs → `okx-dex-ws`
+
 ## Prerequisites
 
 Read `../_shared/preflight.md`. Hibernator calls `onchainos market portfolio-overview`,
@@ -232,6 +251,62 @@ drawdown, cool-off enforcement, atomic state writes.
 
 Integration tests: `tests/integration/test_hibernation_trigger.py` — synthesises a WS payload
 fixture and verifies engagement.
+
+## Worked Example — Failure Path (engagement + cool-off-blocked wake)
+
+Hibernator is sticky by design: once engaged, `wake` only succeeds after the cool-off
+window has elapsed AND the operator runs `wake` explicitly. Demonstrates the safety
+contract — the agent cannot un-pause itself just because the operator changes their mind.
+
+**Command — engage:**
+
+```bash
+python skills/aegis-hibernator/scripts/drawdown.py sleep --reason manual
+```
+
+**Output:**
+
+```json
+{
+  "schema_version": 1,
+  "status": "HIBERNATED",
+  "since_ts_ms": 1779213240303,
+  "reason": "manual",
+  "ws_session_ids": [],
+  "last_drawdown_check_ts_ms": 0,
+  "last_realized_pnl_pct": "0",
+  "cool_off_until_ts_ms": 1779216840303
+}
+```
+
+**Command — premature wake during cool-off:**
+
+```bash
+python skills/aegis-hibernator/scripts/drawdown.py wake
+```
+
+**Output:**
+
+```json
+{
+  "ok": false,
+  "msg": "Cool-off active. Wake available at 2026-05-19T18:47:47.829000+00:00.",
+  "state": {
+    "schema_version": 1,
+    "status": "HIBERNATED",
+    "reason": "manual",
+    "cool_off_until_ts_ms": 1779216840303
+  }
+}
+```
+
+**Interpretation:** the cool-off is an arming delay — it prevents the agent (or a confused
+operator) from clearing the kill switch in the same minute it was engaged. Wake only
+succeeds when `now ≥ cool_off_until_ts_ms` AND the operator explicitly invokes `wake`.
+
+**Caller next step (Fader during this window):** every `aegis-fader scan` call returns
+`scan_completed` with `status: "skipped", skip_reason: "hibernated"`. No signals are
+pulled, no quotes are issued. Entries resume only after a successful `wake`.
 
 ## Global Notes
 

@@ -211,7 +211,7 @@ def run_cli(args: list[str], *, timeout: int = 30, attempts: int = 3) -> CliResu
       - secrets are redacted from any surface.
     """
     binary = os.environ.get("ONCHAINOS_BINARY", "onchainos")
-    cmd = [binary, *args, "--format", "json"]
+    cmd = [binary, *args]
     delay = 1.0
     last_msg = ""
     for attempt in range(1, attempts + 1):

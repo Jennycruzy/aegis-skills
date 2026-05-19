@@ -118,11 +118,17 @@ def compose_score(
     else:
         decision = "ALLOW"
 
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for r in reasons:
+        if r not in seen:
+            seen.add(r)
+            deduped.append(r)
     return {
         "fragility": f"{fragility:.4f}",
         "decision": decision,
         "factors": detailed,
-        "reasons": reasons,
+        "reasons": deduped,
         "security_token_scan": {"riskLevel": security_risk_level},
     }
 
@@ -188,7 +194,7 @@ def factor_dev_rug_history(
     if not res.ok or not isinstance(res.data, dict):
         if res.code in {50125, 80001}:
             return None, ["geo_block:dev"]
-        return None, ["dev_info_unavailable"]
+        return None, ["dev_rug_history_unavailable"]
     rug_count = _to_dec(res.data.get("rugPullCount"), Decimal("0"))
     return _clamp_dec(rug_count / Decimal("3"), Decimal("0"), Decimal("1")), []
 
@@ -217,14 +223,14 @@ def factor_lp_unlock_proximity(
     if not res.ok or not isinstance(res.data, dict):
         if res.code in {50125, 80001}:
             return None, ["geo_block:lp"]
-        return None, ["lp_unavailable"]
+        return None, ["lp_unlock_proximity_unavailable"]
     unlock_ms = res.data.get("lpUnlockTimeMs") or res.data.get("lpLockUntilTimestamp")
     if unlock_ms is None:
-        return None, ["lp_unavailable"]
+        return None, ["lp_unlock_proximity_unavailable"]
     try:
         unlock = int(unlock_ms)
     except (TypeError, ValueError):
-        return None, ["lp_unavailable"]
+        return None, ["lp_unlock_proximity_unavailable"]
     delta_days = max(0, (unlock - now_ms()) // 86_400_000)
     proximity = Decimal("1") - _clamp_dec(
         Decimal(delta_days) / Decimal("30"), Decimal("0"), Decimal("1"),

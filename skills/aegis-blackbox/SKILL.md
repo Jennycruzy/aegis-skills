@@ -15,6 +15,26 @@ agent:
 
 Append-only JSONL decision ledger, signal-source decay metric, and static HTML dashboard.
 
+## Triggers
+
+**Use this skill when the user says (EN / 中文):**
+
+- "inspect trading decisions" / "查看决策日志"
+- "tail the decision log" / "拉日志的最近几条"
+- "view the live dashboard" / "打开仪表盘"
+- "audit gate firings" / "审计风控触发"
+- "compute signal-source decay" / "信号源衰减评分"
+- "retire stale signal feeds" / "退役失效信号源"
+- "attribute realized PnL" / "归因实现盈亏"
+- "why did Fader skip token X" / "为什么Fader跳过了这个币"
+
+**Do NOT use this skill for (route to ↓):**
+
+- Swap quotes or execution → `okx-dex-swap`
+- Wallet balances → `okx-wallet-portfolio`
+- Trade gating decisions → `aegis-fader`, `aegis-sentinel`, `aegis-hibernator`
+- Position sizing math → `aegis-quartermaster`
+
 ## Prerequisites
 
 Read `../_shared/preflight.md`. Verify `onchainos` is on PATH, `OKX_*` env vars are set, and
@@ -43,9 +63,11 @@ python skills/aegis-blackbox/scripts/logger.py tail --limit 20
 # 2. Recompute signal-source decay (uses onchainos market kline for forward returns)
 python skills/aegis-blackbox/scripts/decay.py recompute --chain solana
 
-# 3. Open the dashboard locally
-xdg-open skills/aegis-blackbox/scripts/dashboard.html       # Linux
-open      skills/aegis-blackbox/scripts/dashboard.html       # macOS
+# 3. Open the dashboard locally (modern browsers block file:// fetch — serve over HTTP)
+cp skills/aegis-blackbox/scripts/dashboard.html ~/.aegis/state/blackbox/
+( cd ~/.aegis/state/blackbox && python -m http.server 8000 ) &
+xdg-open http://localhost:8000/dashboard.html               # Linux
+open      http://localhost:8000/dashboard.html               # macOS
 
 # 4. Emit a test event (useful when wiring a new skill)
 python -c "from skills._shared._aegis_common import emit_event; \
@@ -115,7 +137,7 @@ After a tail or grep, suggest opening the dashboard. After a decay recompute, su
 
 1. `decay.py recompute` reads `signal_performance.jsonl` rows.
 2. For each distinct signal source, fetches forward 1h returns via
-   `onchainos market kline --bar 1h --limit 2 --token-pair 501:<wsol-or-token>`.
+   `onchainos market kline --chain <chain> --address <token-ca> --bar 1H --limit 2`.
 3. Computes `decay_score = max(0, (long_term_mean − recent_mean) / max(0.001,
    long_term_std))`.
 4. Writes `decay_report.json` with classification: `RETIRE`, `MONITOR`, `ACTIVE`.
@@ -208,6 +230,42 @@ Unit tests:
 Expected outcomes:
 - `decay.py recompute` produces deterministic classification on the fixtures.
 - `logger.py tail/grep/stats` survives a deliberately corrupt JSONL line by skipping it.
+
+## Worked Example — Failure Path (corrupt JSONL line)
+
+Blackbox is observability — its unhappy path is data corruption, not trade rejection. This
+example shows what happens when a process external to AEGIS appends a malformed line to
+`decisions.jsonl`.
+
+**Pre-condition:** a non-JSON line `this is not valid json {` was appended to
+`~/.aegis/state/blackbox/decisions.jsonl` (e.g. by a misbehaving sibling process).
+
+**Command:**
+
+```bash
+python skills/aegis-blackbox/scripts/logger.py tail --limit 3
+```
+
+**Output (tail skips the corrupt line, does not raise):**
+
+```
+1779213224100  aegis-quartermaster   size_computed         token=EPj…1v reason=below_minimum size_usd=0 fragility=0.550000
+1779213224172  aegis-fader           candidate_evaluated   token=EPj…1v decision=SKIP fragility=0.6800
+1779213240303  aegis-hibernator      hibernation_engaged   reason=manual
+```
+
+**Side effect — `meta.jsonl` records the incident:**
+
+```json
+{"schema_version":1,"ts_ms":1779213240475,"skill":"aegis-blackbox","event":"corrupt_line","file":"decisions.jsonl","line_no":19}
+```
+
+**Interpretation:** Blackbox is total — readers never raise on a corrupt row. The audit
+trail moves to `meta.jsonl` so the operator can investigate the byte offset / line number
+later. AEGIS callers proceeding through the loop are unaffected.
+
+**Caller next step:** none — the corrupt line is isolated. Operator should inspect
+`meta.jsonl` and decide whether to keep or archive `decisions.jsonl`.
 
 ## Global Notes
 

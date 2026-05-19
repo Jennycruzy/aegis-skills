@@ -15,6 +15,26 @@ agent:
 
 Bayesian-shrunk fractional Kelly with wallet, fragility, and minimum-size caps.
 
+## Triggers
+
+**Use this skill when the user says (EN / 中文):**
+
+- "how much should I size this trade" / "仓位多少"
+- "compute Kelly bet" / "算一下凯利"
+- "shrink the win-rate prior" / "对胜率收缩"
+- "cap by fragility" / "按脆弱度缩仓"
+- "cap by wallet" / "按钱包总额限制"
+- "show binding constraint" / "哪一道闸门生效了"
+- "aggregate hit-rate history" / "汇总历史胜率/赔率"
+
+**Do NOT use this skill for (route to ↓):**
+
+- Pre-flight token risk score → `aegis-sentinel`
+- Kill switch → `aegis-hibernator`
+- Swap quote / execution → `okx-dex-swap`
+- Wallet balance fetch — Quartermaster reads it for sizing but the lookup is in `okx-wallet-portfolio`
+- Strategy decision (FOLLOW_LONG / FADE_OPPORTUNITY / SKIP) → `aegis-fader`
+
 ## Prerequisites
 
 Read `../_shared/preflight.md`. Quartermaster is pure math; the only CLI call is
@@ -94,16 +114,23 @@ The script prints a JSON object with every intermediate value:
 {
   "schema_version": 1,
   "ts_ms": 1747545600000,
+  "skill": "aegis-quartermaster",
+  "event": "size_computed",
   "strategy_id": "aegis-fader",
-  "wins": 8, "losses": 5,
-  "hit_rate_shrunk": "0.500",
-  "payoff_ratio": "2.000",
-  "kelly_full": "0.250",
-  "kelly_use": "0.0625",
-  "fragility": "0.22",
-  "fragility_multiplier": "0.776",
+  "token": "So11111111111111111111111111111111111111112",
+  "chain": "solana",
+  "wins": 8,
+  "losses": 5,
+  "avg_win": "0.120000",
+  "avg_loss": "0.060000",
+  "hit_rate_shrunk": "0.500000",
+  "payoff_ratio": "2.000000",
+  "kelly_full": "0.250000",
+  "kelly_use": "0.062500",
+  "fragility": "0.220000",
+  "fragility_multiplier": "0.648000",
   "wallet_balance_usd": "5000.00",
-  "size_usd": "242.50",
+  "size_usd": "162.00",
   "binding_constraint": "fragility_curve",
   "reason": "ok"
 }
@@ -207,6 +234,63 @@ Fixtures: none required (synthetic inputs in the test file).
 Unit tests:
 - `tests/unit/test_kelly.py` — zero history, all-loss, single-win, high-fragility,
   low-balance, negative-edge, exact `binding_constraint` selection.
+
+## Worked Example — Failure Path (high fragility → size = 0)
+
+Quartermaster's most informative unhappy path: the fragility curve drives the multiplier to
+zero when `fragility ≥ 0.5`, forcing `size_usd = 0` even when the Kelly math itself was
+positive. Demonstrates that risk gates compose multiplicatively, not additively.
+
+**Pre-condition:** candidate token with `fragility = 0.55` (above the curve's 0.5 knee),
+wallet balance $5,000, history of 10 wins / 8 losses with `avg_win = 0.10` and
+`avg_loss = 0.08`.
+
+**Command:**
+
+```bash
+python skills/aegis-quartermaster/scripts/kelly.py size \
+    --strategy-id aegis-fader --token <ca> --chain solana \
+    --fragility 0.55 --wallet-balance-usd 5000.00 \
+    --wins 10 --losses 8 --avg-win 0.10 --avg-loss 0.08
+```
+
+**Output:**
+
+```json
+{
+  "schema_version": 1,
+  "ts_ms": 1779213224100,
+  "skill": "aegis-quartermaster",
+  "event": "size_computed",
+  "strategy_id": "aegis-fader",
+  "token": "<ca>",
+  "chain": "solana",
+  "wins": 10,
+  "losses": 8,
+  "avg_win": "0.100000",
+  "avg_loss": "0.080000",
+  "hit_rate_shrunk": "0.478261",
+  "payoff_ratio": "1.250000",
+  "kelly_full": "0.060870",
+  "kelly_use": "0.015217",
+  "fragility": "0.550000",
+  "fragility_multiplier": "0.000000",
+  "wallet_balance_usd": "5000.00",
+  "size_usd": "0",
+  "binding_constraint": "fragility_curve",
+  "reason": "below_minimum"
+}
+```
+
+**Interpretation:** the Kelly criterion alone said positive edge (`kelly_full = 0.061`).
+But the fragility-curve cap zeroed the result before the wallet cap or the minimum check
+even got a chance — `binding_constraint: "fragility_curve"` makes this auditable. The
+`reason: "below_minimum"` field is the technical trigger for the early-return
+(`size_after_frag (0) < min_position_usd (5.00)`), but the upstream cause is the curve
+multiplier.
+
+**Caller next step (Fader):** mark candidate as `SKIP` with `gate_failed: size_zero`. No
+quote, no simulate, no broadcast. The candidate is logged but no funds move.
 
 ## Global Notes
 
