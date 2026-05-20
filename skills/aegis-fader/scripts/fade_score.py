@@ -315,7 +315,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         })
 
         # 4b. Quartermaster sizing — only if Sentinel didn't BLOCK and we have a balance.
-        kelly_result: dict[str, Any] | None = None
+        kelly_result: dict[str, Any] = {}
         if sentinel_decision != "BLOCK" and wallet_balance is not None:
             history = kelly_mod.aggregate_history(
                 kelly_mod._read_trades(blackbox_dir() / "trades.jsonl"),
@@ -350,7 +350,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
             config=fader_cfg,
         )
 
-        if kelly_result is not None:
+        if kelly_result:
             size_usd = kelly_result["size_usd"]
             binding = kelly_result["binding_constraint"]
         elif sentinel_decision == "BLOCK":
