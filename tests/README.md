@@ -32,7 +32,7 @@ tests/
 pytest tests/unit -v
 pytest tests/integration -v   # skipped without OKX_API_KEY / OKX_SECRET_KEY / OKX_PASSPHRASE
 ruff check .
-mypy --strict skills/
+mypy skills/ --ignore-missing-imports
 ```
 
 ## Conventions

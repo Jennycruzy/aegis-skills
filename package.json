@@ -13,16 +13,17 @@
     "trading",
     "risk-management",
     "kelly",
+    "fragility",
     "kill-switch",
     "observability",
     "agentic-wallet"
   ],
-  "author": "aegis",
+  "author": "Jennycruzy",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/aegis/aegis-skills",
+  "homepage": "https://github.com/Jennycruzy/aegis-skills",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aegis/aegis-skills.git"
+    "url": "https://github.com/Jennycruzy/aegis-skills.git"
   },
   "files": [
     "skills/",

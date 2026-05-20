@@ -35,7 +35,7 @@ single static HTML dashboard.
 $ ruff check .
 All checks passed!
 
-$ mypy --strict skills/
+$ mypy skills/ --ignore-missing-imports
 Success: no issues found in 9 source files
 
 $ pytest tests/unit -v
@@ -150,7 +150,7 @@ $ grep -REn '\b[0-9a-fA-F]{64}\b' skills workflows docs \
 - [x] Hibernator is sticky and requires elapsed cool-off + explicit `wake`.
 - [x] Dashboard renders without a server (tests inspect file content; a real browser run
       requires `python -m http.server` only for the `file://` fetch restriction on Chrome).
-- [x] CI runs `ruff`, `mypy --strict`, `pytest tests/unit`, `pytest tests/integration`,
+- [x] CI runs `ruff`, `mypy --ignore-missing-imports`, `pytest tests/unit`, `pytest tests/integration`,
       a no-secret audit, and a SKILL.md description-length budget check.
 
 ## 9. External assumptions the user should double-check

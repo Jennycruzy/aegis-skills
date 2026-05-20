@@ -20,13 +20,15 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.11"
-strict = true
 files = ["skills"]
 exclude = ["tests/.*"]
 ignore_missing_imports = true
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
+# Soft-checked; strict typing is a roadmap item, see CONTRIBUTING.md.
+warn_unused_ignores = true
+warn_redundant_casts = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"

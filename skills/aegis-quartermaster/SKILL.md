@@ -5,7 +5,7 @@ license: Apache-2.0
 metadata:
   author: aegis
   version: "1.0.0"
-  homepage: "https://github.com/aegis/aegis-skills"
+  homepage: "https://github.com/Jennycruzy/aegis-skills"
 agent:
   requires:
     bins: ["onchainos"]

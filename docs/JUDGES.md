@@ -114,7 +114,7 @@ gate-scan and the broadcast leg uniformly.
   `risk-management`, `kill-switch`).
 - `CHANGELOG.md` records the v1.0.0 release and substitutions.
 - `LICENSE` is Apache-2.0.
-- `.github/workflows/ci.yml` runs `ruff`, `mypy --strict`, `pytest tests/unit`,
+- `.github/workflows/ci.yml` runs `ruff`, `mypy --ignore-missing-imports`, `pytest tests/unit`,
   `pytest tests/integration` and a no-secret audit on every push.
 
 ## Reproducing the dry-run

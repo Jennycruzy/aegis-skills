@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Built on OnchainOS](https://img.shields.io/badge/built%20on-OnchainOS-111.svg)](https://github.com/okx/onchainos-skills)
 [![Skills](https://img.shields.io/badge/skills-5-success.svg)](skills/)
+[![CI](https://github.com/Jennycruzy/aegis-skills/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Jennycruzy/aegis-skills/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-63%20unit%20%2F%209%20integration-success.svg)](tests/)
 [![Chains](https://img.shields.io/badge/chains-Solana%20%E2%80%A2%20X%20Layer-purple.svg)](skills/_shared/chain-support.md)
 
@@ -69,7 +70,7 @@ Detailed schemas, data contracts, and event taxonomy: [ARCHITECTURE.md](ARCHITEC
 
 ```bash
 # 1. Install
-git clone https://github.com/aegis/aegis-skills
+git clone https://github.com/Jennycruzy/aegis-skills
 cd aegis-skills
 cp .env.example .env
 # (fill in OKX sandbox creds: OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE)
@@ -78,9 +79,9 @@ cp .env.example .env
 which onchainos || npx skills add okx/onchainos-skills
 
 # 3. Run tests
-python -m pip install ruff mypy pytest
+python -m pip install "ruff==0.6.9" "mypy==1.11.2" "pytest==8.3.3"
 ruff check .
-mypy --strict skills/
+mypy skills/ --ignore-missing-imports
 pytest tests/unit -v
 pytest tests/integration -v
 
@@ -229,7 +230,7 @@ every AEGIS Python script end-to-end via a synthetic `onchainos` shell stub.
 
 CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs:
 - `ruff check .`
-- `mypy --strict skills/`
+- `mypy skills/ --ignore-missing-imports`
 - `pytest tests/unit -v`
 - `pytest tests/integration -v`
 - No-secret audit + SKILL.md description-length budget.

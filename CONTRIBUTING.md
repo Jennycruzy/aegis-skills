@@ -20,7 +20,7 @@ AEGIS is a five-Skill OnchainOS framework. Contributions are welcome via PR.
 
 ```bash
 ruff check .
-mypy --strict skills/
+mypy skills/ --ignore-missing-imports
 pytest tests/unit -v
 pytest tests/integration -v   # requires OKX sandbox env vars
 ```
@@ -39,5 +39,5 @@ Skills the agent must not re-implement.
 - [ ] All new config keys appear in `aegis.config.example.json` with a sensible default.
 - [ ] All new state-file paths match `~/.aegis/state/<file>.json`.
 - [ ] Unit tests cover the new behaviour (zero / boundary / negative paths).
-- [ ] `ruff`, `mypy --strict`, `pytest` are green locally.
+- [ ] `ruff`, `mypy --ignore-missing-imports`, `pytest` are green locally.
 - [ ] No secrets in the diff (`OKX_*`, base58, 64-hex).

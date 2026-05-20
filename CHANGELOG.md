@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file. The format 
   state-schema, prompt-injection).
 - Workflows: `full-trading-loop.md`, `dry-run.md`, `safe-shutdown.md`, `INDEX.md`.
 - Unit + integration tests under `tests/`.
-- CI via `.github/workflows/ci.yml` (ruff, mypy --strict, pytest).
+- CI via `.github/workflows/ci.yml` (ruff, mypy --ignore-missing-imports, pytest).
 - Built for OKX Agentic Wallet Trading Competition — Skill Quality Award track.
 
 ### Substitutions
