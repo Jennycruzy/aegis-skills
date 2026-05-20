@@ -286,7 +286,7 @@ def _extract_data(parsed: Any) -> dict[str, Any] | list[Any] | None:
     if isinstance(parsed, dict):
         if "data" in parsed:
             inner = parsed["data"]
-            if isinstance(inner, (dict, list)):
+            if isinstance(inner, dict | list):
                 return inner
         return parsed
     if isinstance(parsed, list):
